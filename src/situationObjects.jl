@@ -1,3 +1,11 @@
+"""
+A "thing" is a single item in the knapsack. It has a weight and a value.
+
+"""
+struct Thing 
+    weight::Int
+    value::Int
+end # Thing
 
 """ 
 The "bag" for this situation. This will keep track of the objects within it,
@@ -13,11 +21,3 @@ mutable struct Knapsack
 end # Knapsack
 
 
-"""
-A "thing" is a single item in the knapsack. It has a weight and a value.
-
-"""
-struct Thing 
-    weight::Int
-    value::Int
-end # Thing

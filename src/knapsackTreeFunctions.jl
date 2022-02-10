@@ -81,3 +81,24 @@ be called recursively until all children are created.
         
 
 """
+function propagate_children!(node::TreeNode, things::Vector{Thing}, maxWeight::Int)
+    # loop through all children and fork them
+    inserted = fork!(node, things, maxWeight) # for the node
+
+    if any(inserted) # if one child was created
+        propagate_children!.(node.children, (things,), maxWeight) # propagate children
+    end # if
+
+end # function propagate_children
+
+"""
+Final function to create tree, propagate all possibilities, and return the
+tree
+
+"""
+function generate_tree(things::Vector{Thing}, maxWeight::Int)
+    tree = create_tree(things, maxWeight) # create tree
+    propagate_children!.(tree.children, (things,), maxWeight) # propagate children
+    tree # return tree
+
+end # function generate_tree
