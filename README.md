@@ -74,3 +74,71 @@ end # TreeNode
 The nodes are at least a little bit more interesting. Essentially my plan is to keep a running tally of the weight and value in each node and then from each node split into however many objects there are children nodes and run from there. 
 
 The first function I think I should create is a ```fork!()``` function. Basically, a function which takes a given node, a list of the things, and then gives the node the appropriate number of children. 
+
+So, after getting carried away for a while and doing a bunch of the implementation, I have a program that I believe accurately generates the tree I wanted. Here is what I made: first, like I said, I made a ```fork!()``` function: 
+```julia
+function fork!(node::TreeNode, things::Vector{Thing}, maxWeight::Int)
+    oneInsert = false # keep track if one child was created
+    # loop through all things and add them as children if they are legal
+    for thing in things
+        if (node.weight + thing.weight) <= maxWeight # check weight 
+            push!(node.children, TreeNode(Vector{TreeNode}(), (node.weight + thing.weight), (node.value + thing.value), thing)) # add child
+            oneInsert = true
+        end # if 
+
+    end # for 
+
+    oneInsert # return if one child was created
+
+end # function fork!
+```
+All this function really does is it takes a given tree node and adds a new node under it for each "Thing" that will fit (within weight restrictions). It updates the weight and height and then returns if it ever actuall added something (so if the knapsack can no longer carry things, this returns ```false```). 
+
+I then (slightly out of order of what actually happened, but for this story to make sense) created a ```propagate_children!()``` function:
+```julia 
+function propagate_children!(node::TreeNode, things::Vector{Thing}, maxWeight::Int)
+    # loop through all children and fork them
+    inserted = fork!(node, things, maxWeight) # for the node
+
+    if any(inserted) # if one child was created
+        propagate_children!.(node.children, (things,), maxWeight) # propagate children
+    end # if
+
+end # function propagate_children
+```
+This is essentially just a wrapper for the ```fork!()``` function that takes in a node, runs ```fork!()``` on the node, and then if it was actually forked (remember those Bools I returned earlier?) it runs itself recursively on all its children (Julia has really nice vectorization, so I just have to add that ```.```). Cool! So this in itself should be able to generate the entire tree I need, but I just added some convenience functions around it to create the inital tree: 
+```julia
+function create_tree(things::Vector{Thing}, maxWeight::Int)
+    initialChildren = Vector{TreeNode}() # create initial children list
+    for thing in things # loop through all things and create children 
+        if thing.weight <= maxWeight # check weight 
+            push!(initialChildren, TreeNode(Vector{TreeNode}(), thing.weight, thing.value, thing)) # add child
+        end # if
+    end # for
+
+    KnapsackTree(initialChildren, things, maxWeight) # create root
+
+end # function create_tree
+```
+And to put everything together and just give me the final tree:
+```julia
+function generate_tree(things::Vector{Thing}, maxWeight::Int)
+    tree = create_tree(things, maxWeight) # create tree
+    propagate_children!.(tree.children, (things,), maxWeight) # propagate children
+    tree # return tree
+
+end # function generate_tree
+```
+Essentially unimportant functions that just make calling things easier. I tested all of this in the ```test/treeGeneration.jl``` file, and it seems to work how I expected. Code for easier reference:
+```julia
+allThings = [Thing(2, 1), Thing(3, 4), Thing(1, 1)] # random things
+
+const max_weight = 4
+
+println(generate_tree(allThings, max_weight))
+```
+
+Okay now, as a final step, I just need to get the highest value ```TreeNode``` at the bottom of the tree... Probably the best way of doing this is propagating up another value for the maximum value of the children of a given node. So I will go tinker with that until I get something working... 
+
+I just talked with my teacher about this solution and I have been told, and after staring at a graph for like 2 hours agree, that this is not a great solution. However, to have a baseline solution to this problem (that isn't dynamic programming, but should work) I am going to implement this. I also spent a bit of time thinking about my branch culling I suggested earlier and think that might speed this up, so maybe I try implementing that as well and comparing it to the dynamic programming solution I come up with later. Anyway, for now, back to our usually scheduled programming: 
+
