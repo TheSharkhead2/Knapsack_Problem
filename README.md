@@ -10,6 +10,8 @@ My goal with this project is to come to some form of dynamic programming solutio
 
 ## Finding a Solution 
 
+Note from after getting halfway through this: this isn't a dynamic programming solution, but it should work, so I will implement this as a reference. 
+
 I am going to start trying to find a solution by first creating an environment for the situation. I think I am going to need the knapsack, various objects, and a way to put objects into the knapsack. 
 
 Alright, now I have a knapsack object: 
@@ -140,5 +142,23 @@ println(generate_tree(allThings, max_weight))
 
 Okay now, as a final step, I just need to get the highest value ```TreeNode``` at the bottom of the tree... Probably the best way of doing this is propagating up another value for the maximum value of the children of a given node. So I will go tinker with that until I get something working... 
 
-I just talked with my teacher about this solution and I have been told, and after staring at a graph for like 2 hours agree, that this is not a great solution. However, to have a baseline solution to this problem (that isn't dynamic programming, but should work) I am going to implement this. I also spent a bit of time thinking about my branch culling I suggested earlier and think that might speed this up, so maybe I try implementing that as well and comparing it to the dynamic programming solution I come up with later. Anyway, for now, back to our usually scheduled programming: 
+I just talked with my teacher about this solution and I have been told, and after staring at a graph for like 2 hours agree, that this is not a great solution. However, to have a baseline solution to this problem (that isn't dynamic programming, but should work) I am going to implement this. Another thing I was told is that I misinterpreted the problem, and there are limits on the amount of each item you can take... which makes sense, but I totally disregarded I guess. That is something I am going to need to worry about now. I also spent a bit of time thinking about my branch culling I suggested earlier and think that might speed this up, so maybe I try implementing that as well and comparing it to the dynamic programming solution I come up with later. Anyway, for now, back to our usually scheduled programming: 
+
+## The **Dynamic Programming** Solution
+
+So how can we think about approaching this from a dynamic programming perspective? Well, we want to think about how we would break down a step into smaller sub-steps. What would a "previous step" be in this context? Essentially the bad with one less item in it. So the best bag with a given number of items in it is the best of all the bags without one of the items plus a new item. 
+
+In slightly more precise language, we could say that we have some function ```b(w)``` that for some weight ```w```, it returns the "best value for that weight. Well we could break down this function into the smaller weights that would have had to come before it: 
+```
+b(w) = max(v_1 + b[w-w_1] + ... + v_n + b[w-w_n])
+```
+Essentially, find the best value of all the previous possible weight steps when adding the value of the object that corresponds to jumping to this new weight. We can then break down all the functions in this new expression and break down the functions in those and so on. 
+
+Of course, we should add that the best value for a situation with no previous weights is just 0 as this means this is the base weight. 
+
+So with that out of the way, how would we approach creating this algorithm? Well, we would have to look at all the weights between 0 and the maximum weight of a given situation. We then have to look at what happens for any given weight if we add another item. 
+
+So how would this play out? Well we can start with weight 0, and because 0 weight means 0 items, this has 0 value so the best you can do is... 0 value. That was the easy case, now for all following weights we say, for each item, if I went back to the maximum score for our current weight minus the weight of this item and add the value of this item to the value then is this a larger value or was it a larger value for the previous item at this weight? 
+
+This is very hard to explain, and I am not doing a good job of it, but I think I understand how to implement it so I am going to do that. 
 
