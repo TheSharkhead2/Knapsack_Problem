@@ -194,3 +194,40 @@ Essentially what I am doing here is creating a blank Tuple with integer entries 
 
 Now this does present my main issue with my algorithm: This list comprehension: ```Tuple((0 for i in situation.things)) ```. I'll get to why more later, but essentially I couldn't think of a way to update just one of the indices of the Tuple without another list comprehension... Which technically could slow the algorithm down a ton with a lot of items. But I haven't benchmarked this yet, so we hope Julia has some cool caching that makes list comprehension much better in this instance. If not, this is a place where I definitely know there is an issue and I know what I have to do to improve it. 
 
+Anyway, we now loop through all the entries in the matrix and calculate the optimal score for each weight and thing. We start our loop by making sure that the item can even fit within this weight of knapsack: 
+```julia
+for w in 1:situation.maxWeight 
+    for (thingIndex, thing) in enumerate(situation.things) 
+        if w-thing.weight >= 0 
+            
+        end 
+    end 
+end
+```
+
+This would be solved anyway due to the way the rest of the loop is programmed; however, there really isn't any point in checking to see all the previous weights and then seeing if you can add this current weight if you just couldn't add the thing if the bag was empty. It is just never possible. Therefore, this if statement is purely to remove checking these trivial cases. 
+
+Once this check has been completed, we know we can safely "remove" this item and we won't be left with negative weight. So we look at the values for the knapsack when this weight is removed: 
+```julia 
+for w in 1:situation.maxWeight 
+    for (thingIndex, thing) in enumerate(situation.things) 
+        if w-thing.weight >= 0 
+            previousValues = scores[1:length(situation.things)+1, w-thing.weight+1]
+        end 
+    end 
+end
+```
+
+For clarity from now on, I am only going to put the code in the loop as most of the algorithm takes place in the loop. So here is the new code: 
+```julia
+previousValues = scores[1:length(situation.things)+1, w-thing.weight+1]
+```
+
+This is very simply just grabbing the column in the scores matrix that represents taking away the weight of the current thing. It isn't too complicated. The reason we do this, is we can then find the maximum value in this slice: 
+```julia 
+previousValues = scores[1:length(situation.things)+1, w-thing.weight+1]
+
+maxValue = findmax(previousValues)
+```
+
+Here the ```findmax()``` command gives us the index and the maximum value for the vector. Very handy.
