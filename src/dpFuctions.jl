@@ -28,12 +28,15 @@ function get_best_items(situation::Situation)
 
                     thingTotals[thingIndex+1, w+1] = thingTotals[thingIndex+1, w-thing.weight+1] # set the thingTotals to the thingTotals of the previous weight (nothing was updated)
                 end # if
-
-
             end # if 
-
         end # for
     end # for
+
+    maxScore = findmax(scores[1:length(situation.things)+1, situation.maxWeight+1]) # get the max value and index of the last row of scores (this would be the ideal score)
+
+    thingComb = thingTotals[maxScore[2], situation.maxWeight+1] # get the thing combination of the max score
+
+    (maxScore[1], thingComb)
 
 end # function get_best_items
 

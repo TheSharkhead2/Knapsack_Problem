@@ -162,3 +162,20 @@ So how would this play out? Well we can start with weight 0, and because 0 weigh
 
 This is very hard to explain, and I am not doing a good job of it, but I think I understand how to implement it so I am going to do that. 
 
+We start the implementation by making some objects to hold information: 
+```julia
+struct Thing
+    value::Int
+    weight::Int
+    maxN::Int # the max of this item you can have
+end # Thing
+
+struct Situation
+    maxWeight::Int
+    things::Vector{Thing}
+end # Situation
+```
+
+These are largely just data storage to make the code a bit more readable and easier on me. Essentially, we are just storing the max weight of the knapsack, the various things you can pick up, and how many of each thing there is. Basically, just the parameters for a given senario. 
+
+So now onto the actual algorithm. 
