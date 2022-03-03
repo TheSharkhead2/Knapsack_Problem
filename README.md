@@ -202,9 +202,9 @@ end # function get_best_items
 
 Which can be found in the [dpFunctions.jl](src/dpFuctions.jl) file. Though, it is all here so you don't really have to go there if you don't want to. 
 
-## Finding a Solution 
+## Finding a Solution (Not Dynamic Programming)
 
-Note from after getting halfway through this: this isn't a dynamic programming solution, but it should work, so I will implement this as a reference. 
+Note from after getting halfway through this: **this isn't a dynamic programming** solution, but it should work, so I will implement this as a reference. 
 
 I am going to start trying to find a solution by first creating an environment for the situation. I think I am going to need the knapsack, various objects, and a way to put objects into the knapsack. 
 
