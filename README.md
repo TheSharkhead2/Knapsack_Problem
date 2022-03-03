@@ -178,4 +178,19 @@ end # Situation
 
 These are largely just data storage to make the code a bit more readable and easier on me. Essentially, we are just storing the max weight of the knapsack, the various things you can pick up, and how many of each thing there is. Basically, just the parameters for a given senario. 
 
-So now onto the actual algorithm. 
+So now onto the actual algorithm. We want to go through all the possible weights and then all the possible things and then store information about each of those combinations. Therefore, a matrix of size numberThings x weight would be a helpful storage device: 
+```julia 
+scores = Int.(zeros(length(situation.things)+1, situation.maxWeight+1))
+```
+
+This will be a matrix where we just store the max score for each position in the matrix. For simplicity, we also probably want to store what combination of items we are using at each location. For that we can use a new matrix: 
+```julia 
+blankTuple = Tuple((0 for i in situation.things)) 
+
+thingTotals = fill(blankTuple, (length(situation.things)+1, situation.maxWeight+1)) 
+```
+
+Essentially what I am doing here is creating a blank Tuple with integer entries for each of the Things. Whenever we add one Thing to a certain position, we can just increment that position in the Tuple by 1. I am putting all these Tuples into another matrix of the same size as the previous scores matrix. 
+
+Now this does present my main issue with my algorithm: This list comprehension: ```Tuple((0 for i in situation.things)) ```. I'll get to why more later, but essentially I couldn't think of a way to update just one of the indices of the Tuple without another list comprehension... Which technically could slow the algorithm down a ton with a lot of items. But I haven't benchmarked this yet, so we hope Julia has some cool caching that makes list comprehension much better in this instance. If not, this is a place where I definitely know there is an issue and I know what I have to do to improve it. 
+
