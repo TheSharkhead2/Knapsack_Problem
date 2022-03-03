@@ -16,14 +16,18 @@ function get_best_items(situation::Situation)
             if w-thing.weight >= 0 # make sure you can fit thing into knapsack 
                 previousValues = scores[1:length(situation.things)+1, w-thing.weight+1] # get all the values from the weight when "removing" this thing 
 
-                # get the max value of the values 
-                maxValue = findmax(previousValues) # get maximum value and its index
+                previousValuesOver = [totals[thingIndex] + 1 <= thing.maxN ? 1 : 0 for totals in thingTotals[1:length(situation.things)+1, w-thing.weight+1] ]
 
-                if thingTotals[maxValue[2], w-thing.weight+1][thingIndex] + 1 <= thing.maxN # make sure you have enough of the item
-                    scores[thingIndex+1, w+1] = maxValue[1] + thing.value # set the value of the thing at this weight to the max value
+                previousValuesIncreased = previousValues + (previousValuesOver * thing.value) # add the value of the thing to the previous values if there are enough of the thing
+
+                # get the max value of the values 
+                maxValue = findmax(previousValuesIncreased) # get maximum value and its index
+
+                if previousValuesOver[maxValue[2]] == 1 # if you could fit another thing in and so we are adding a thing, then make sure that is updated 
+                    scores[thingIndex+1, w+1] = maxValue[1] # set the value at this index to the maximum value of the previous values added to the things value
                     
                     thingTotals[thingIndex+1, w+1] = Tuple(( index == thingIndex ? value+1 : value for (index, value) in enumerate(thingTotals[maxValue[2], w-thing.weight+1]))) # add one to the total of the thing just added
-                else 
+                else # otherwise you don't have to update the thingTotals
                     scores[thingIndex+1, w+1] = maxValue[1] # set the value of the thing at this weight to the max value (so the previous best)
 
                     thingTotals[thingIndex+1, w+1] = thingTotals[maxValue[2], w-thing.weight+1] # set the thingTotals to the thingTotals of the previous weight (nothing was updated)
@@ -31,9 +35,6 @@ function get_best_items(situation::Situation)
             end # if 
         end # for
     end # for
-
-    println(scores)
-    println(thingTotals)
 
     maxScore = findmax(scores[1:length(situation.things)+1, situation.maxWeight+1]) # get the max value and index of the last row of scores (this would be the ideal score)
 
