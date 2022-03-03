@@ -223,11 +223,114 @@ For clarity from now on, I am only going to put the code in the loop as most of 
 previousValues = scores[1:length(situation.things)+1, w-thing.weight+1]
 ```
 
-This is very simply just grabbing the column in the scores matrix that represents taking away the weight of the current thing. It isn't too complicated. The reason we do this, is we can then find the maximum value in this slice: 
+This is very simply just grabbing the column in the scores matrix that represents taking away the weight of the current thing. It isn't too complicated. We now want to find out what happens when we add the value of the current thing, but we can't add the current thing to everything, so we find which previous values all us to add one of the current thing: 
 ```julia 
-previousValues = scores[1:length(situation.things)+1, w-thing.weight+1]
-
-maxValue = findmax(previousValues)
+previousValuesOver = [totals[thingIndex] + 1 <= thing.maxN ? 1 : 0 for totals in thingTotals[1:length(situation.things)+1, w-thing.weight+1] ]
 ```
 
-Here the ```findmax()``` command gives us the index and the maximum value for the vector. Very handy.
+This is where the list comprehensions get concerning, but hopefully it is fine? Essentially all I am doing here is creating a vector where each index is either 1 if we can add one of the things, 0 if we can't. This means we can multiply this vector by the value of the current thing and then add this vector to the previous values to get all the possible new values by adding the current thing: 
+```julia
+previousValuesIncreased = previousValues + (previousValuesOver * thing.value) 
+```
+
+Now, initially, I was doing this without list comprehension and simply finding the maxmium value of the previous values, add the current value if I could, and if I couldn't then just use that max value. But I don't believe that works as you could have an instance of, say, a value of 19 where you can't add the item valued at 5, but a value of 18 where you can. Of course, 23 > 19 so my previous algorithm wouldn't work. This change should fix that. But now that we have a list of all the possible values, we just find the best one: 
+```julia 
+maxValue = findmax(previousValuesIncreased)
+```
+
+Now that we have an ideal value, we just need to update the scores matrix and the thingTotals matrix and call it a day. Updating the score matrix is easy, we just set the entry to the max value, but to update the thingTotals we need to check if we actually added an item for the given max value. We can do this with a simple if statement: 
+```julia 
+if previousValuesOver[maxValue[2]] == 1 
+    scores[thingIndex+1, w+1] = maxValue[1] 
+    
+    thingTotals[thingIndex+1, w+1] = Tuple(( index == thingIndex ? value+1 : value for (index, value) in enumerate(thingTotals[maxValue[2], w-thing.weight+1])))
+else 
+    scores[thingIndex+1, w+1] = maxValue[1] 
+
+    thingTotals[thingIndex+1, w+1] = thingTotals[maxValue[2], w-thing.weight+1]
+end 
+```
+
+So, all we are doing here is checking to see if we could add the thing earlier, meaning we did, and if we did, we update the score to be the max value and we increment the correct index in the thingTotals matrix entry to reflect the addition of a new item. In the event that we didn't add a new thing, we can update the score in the same way (remember we already accounted for this) and we can just carry over the same thingTotals entry as nothing has changed. And cool, that completes our loop! Here is the code in full: 
+```julia 
+for w in 1:situation.maxWeight # loop through all the possible weights in the situation
+    for (thingIndex, thing) in enumerate(situation.things) # loop through all the things 
+        if w-thing.weight >= 0 # make sure you can fit thing into knapsack 
+            previousValues = scores[1:length(situation.things)+1, w-thing.weight+1] # get all the values from the weight when "removing" this thing 
+
+            previousValuesOver = [totals[thingIndex] + 1 <= thing.maxN ? 1 : 0 for totals in thingTotals[1:length(situation.things)+1, w-thing.weight+1] ]
+
+            previousValuesIncreased = previousValues + (previousValuesOver * thing.value) # add the value of the thing to the previous values if there are enough of the thing
+
+            # get the max value of the values 
+            maxValue = findmax(previousValuesIncreased) # get maximum value and its index
+
+            if previousValuesOver[maxValue[2]] == 1 # if you could fit another thing in and so we are adding a thing, then make sure that is updated 
+                scores[thingIndex+1, w+1] = maxValue[1] # set the value at this index to the maximum value of the previous values added to the things value
+                
+                thingTotals[thingIndex+1, w+1] = Tuple(( index == thingIndex ? value+1 : value for (index, value) in enumerate(thingTotals[maxValue[2], w-thing.weight+1]))) # add one to the total of the thing just added
+            else # otherwise you don't have to update the thingTotals
+                scores[thingIndex+1, w+1] = maxValue[1] # set the value of the thing at this weight to the max value (so the previous best)
+
+                thingTotals[thingIndex+1, w+1] = thingTotals[maxValue[2], w-thing.weight+1] # set the thingTotals to the thingTotals of the previous weight (nothing was updated)
+            end # if
+        end # if 
+    end # for
+end # for
+```
+
+But we aren't totally done with our algorithm just yet (though there really isn't anything left). We need to grab the best score found: 
+```julia 
+maxScore = findmax(scores[1:length(situation.things)+1, situation.maxWeight+1])
+```
+
+And then the corresponding combination of items: 
+```julia 
+thingComb = thingTotals[maxScore[2], situation.maxWeight+1]
+```
+
+And we return both of those! Woo! Here is our algorithm in full: 
+```julia 
+function get_best_items(situation::Situation)
+    # matrix to store all of the values for each item and weight. 
+    scores = Int.(zeros(length(situation.things)+1, situation.maxWeight+1))
+
+    blankTuple = Tuple((0 for i in situation.things)) # blank tuple to fill matrix with which counts number of each item at each index
+
+    thingTotals = fill(blankTuple, (length(situation.things)+1, situation.maxWeight+1)) # matrix of the same size with a bunch of tuples counting the number of each item at each position. Currently all 0 to initialize matrix
+
+    for w in 1:situation.maxWeight # loop through all the possible weights in the situation
+        for (thingIndex, thing) in enumerate(situation.things) # loop through all the things 
+            if w-thing.weight >= 0 # make sure you can fit thing into knapsack 
+                previousValues = scores[1:length(situation.things)+1, w-thing.weight+1] # get all the values from the weight when "removing" this thing 
+
+                previousValuesOver = [totals[thingIndex] + 1 <= thing.maxN ? 1 : 0 for totals in thingTotals[1:length(situation.things)+1, w-thing.weight+1] ]
+
+                previousValuesIncreased = previousValues + (previousValuesOver * thing.value) # add the value of the thing to the previous values if there are enough of the thing
+
+                # get the max value of the values 
+                maxValue = findmax(previousValuesIncreased) # get maximum value and its index
+
+                if previousValuesOver[maxValue[2]] == 1 # if you could fit another thing in and so we are adding a thing, then make sure that is updated 
+                    scores[thingIndex+1, w+1] = maxValue[1] # set the value at this index to the maximum value of the previous values added to the things value
+                    
+                    thingTotals[thingIndex+1, w+1] = Tuple(( index == thingIndex ? value+1 : value for (index, value) in enumerate(thingTotals[maxValue[2], w-thing.weight+1]))) # add one to the total of the thing just added
+                else # otherwise you don't have to update the thingTotals
+                    scores[thingIndex+1, w+1] = maxValue[1] # set the value of the thing at this weight to the max value (so the previous best)
+
+                    thingTotals[thingIndex+1, w+1] = thingTotals[maxValue[2], w-thing.weight+1] # set the thingTotals to the thingTotals of the previous weight (nothing was updated)
+                end # if
+            end # if 
+        end # for
+    end # for
+
+    maxScore = findmax(scores[1:length(situation.things)+1, situation.maxWeight+1]) # get the max value and index of the last row of scores (this would be the ideal score)
+
+    thingComb = thingTotals[maxScore[2], situation.maxWeight+1] # get the thing combination of the max score
+
+    (maxScore[1], thingComb)
+
+end # function get_best_items
+```
+
+Which can be found in the [dpFunctions.jl](src/dpFuctions.jl) file. Though, it is all here so you don't really have to go there if you don't want to. 
