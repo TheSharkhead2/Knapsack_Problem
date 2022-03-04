@@ -202,6 +202,75 @@ end # function get_best_items
 
 Which can be found in the [dpFunctions.jl](src/dpFuctions.jl) file. Though, it is all here so you don't really have to go there if you don't want to. 
 
+## Testing my Solution 
+Showing that this solution works is... Well I don't particularly want to write another algorithm that I know for sure works, and given that I believe my logic, and it appears to work, I am just going to assume my algorithm is accurate (that could be bad though, but oh well). 
+
+Though the type of testing that is necessary is seeing if this actually runs in O(nW) time where n is the number of things and W is the weight. ALl I need to do for this is show it is linear with W and constant n and vise versa. Shouldn't be too hard. 
+
+Creating a testing environment was fairly simple. For starters, I needed a way to generate a certain number of things so I could show scaling with that number. Hence, I created the following function: 
+```julia 
+function generate_things(n::Int, maxWeight::Int, maxValue::Int, maxNumber::Int)
+    things = Vector{Thing}()
+
+    for i ∈ 1:n 
+        weight = rand(1:maxWeight)
+        value = rand(1:maxValue)
+        number = rand(1:maxNumber)
+
+        push!(things, Thing(weight, value, number))
+    end # for 
+
+    things 
+end # function generate_things
+```
+
+All this is doing is generating a Vector containing a bunch of random things. Cool. From here, all I have to do is grab user parameters, construct the situation, and benchmark the algorithm on that situation: 
+```julia
+nThings = parse(Int, ARGS[1])
+totalWeight = parse(Int, ARGS[2]) # the weight the knapsack can hold
+
+things = generate_things(nThings, maxWeight, maxValue, div(totalWeight, 20))
+
+println("Testing with the Things: ", things)
+
+situation = Situation(totalWeight, things)
+
+println(@benchmark get_best_items(situation))
+```
+
+Pretty simple and straightforward.
+
+Now for my testing results. Changing the total weight of the knapsack while keeping the number of Things constant at 10, I was able to get: 
+```
+50 Weight → 246.9 μs
+100 Weight → 1.073 ms 
+150 Weight → 1.832 ms 
+200 Weight → 3.433 ms
+250 Weight → 4.605 ms
+300 Weight → 6.021 ms 
+350 Weight → 6.699 ms 
+400 Weight → 7.722 ms 
+450 Weight → 8.923 ms 
+500 Weight → 10.132 ms
+```
+
+So it is definetly variable, but it looks pretty linear. The increase per 50 increase in weight looks like roughly 1 ms and that seems to hold. Now for testing Things. I am going to increment the number of Things while keeping weight constant at 50: 
+```
+10 Things → 144.6 μs
+20 Things → 702 μs
+30 Things → 2.141 ms 
+40 Things → 2.665 ms 
+50 Things → 4.976 ms 
+60 Things → 4.393 ms 
+70 Things → 12.748 ms
+80 Things → 14.910 ms 
+90 Things → 16.459 ms 
+100 Things → 25.404 ms 
+110 Things → 33.799 ms
+```
+
+Okay. It seems like my reliance on list comprehension is screwing me over and the relationship with Things is not linear. I have also realized that randomly generating a bunch of Things is probably not an amazing way to test this because the time taken is going to really depend on what Things we generate. Say we generate a bunch of Things that weight more than the weight of the bag, then we can do absolutely no calculations for those things (because of the one optimization I made) and therefore the algorithm goes much, much faster. If that is not the roll of items we get, then it takes much longer. While this definetly appears to be affecting my testing, I don't believe this is the actual cause of non-linear relationship to the number of Things. 
+
 ## Finding a Solution (Not Dynamic Programming)
 
 Note from after getting halfway through this: **this isn't a dynamic programming** solution, but it should work, so I will implement this as a reference. 
