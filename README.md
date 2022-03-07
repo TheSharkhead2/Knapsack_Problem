@@ -271,6 +271,75 @@ So it is definetly variable, but it looks pretty linear. The increase per 50 inc
 
 Okay. It seems like my reliance on list comprehension is screwing me over and the relationship with Things is not linear. I have also realized that randomly generating a bunch of Things is probably not an amazing way to test this because the time taken is going to really depend on what Things we generate. Say we generate a bunch of Things that weight more than the weight of the bag, then we can do absolutely no calculations for those things (because of the one optimization I made) and therefore the algorithm goes much, much faster. If that is not the roll of items we get, then it takes much longer. While this definetly appears to be affecting my testing, I don't believe this is the actual cause of non-linear relationship to the number of Things. 
 
+## Fixing my Solution 
+So I need to fix my program such that it runs in the correct time. This is mostly going to involve removing the 3 or so list comprehensions which shouldn't be too bad. For starters, we can pretty easily remove the unimportant, non-performance impacting, initial list comprehension:
+```julia
+blankTuple = Tuple((0 for i in situation.things))
+```
+I don't know what was going through my head at the time of writing this horrendous code, but I seem to have forgotten about some of the more useful vector functions in Julia... Like: 
+```julia
+blankTuple = Tuple(Int.(zeros(length(situation.things))))
+```
+That is much better. Our next problem is this list comprehension:
+```julia
+previousValuesOver = [totals[thingIndex] + 1 <= thing.maxN ? 1 : 0 for totals in thingTotals[1:length(situation.things)+1, w-thing.weight+1] ]
+```
+
+Unlike the first one, this is actually reasonably contributing to performance issues and should definetly be changed. Essentially, all this is doing is finding which weights can actually have the current thing added. We should probably be able to instead use vector operations to do this much more efficiently. For starters, we are going to need the right counter for the Thing we are on. This means getting a certain index from a bunch of Tuples. Luckily, we can do this like so: 
+```julia
+getfield.(thingTotals[1:length(situation.things)+1, w-thing.weight+1], thingIndex)
+```
+
+This will return a new vector where each entry is simply the count for each weight for the specific thing. We can then just add one to every entry: 
+```julia 
+newTotals = getfield.(thingTotals[1:length(situation.things)+1, w-thing.weight+1], thingIndex) .+ 1
+```
+
+And then subtract the max number of the Thing: 
+```julia 
+totalsDifferences = newtotals .- thing.maxN
+```
+
+We now have a vector where if the entry is negative, the item won't fit, and if it is positive, it will. And we can now do our comparison to check if it is less than 0: 
+```julia 
+totalsDifferences .>= 0
+```
+
+This will finally create a vector that is 0 if it is less than 0 and 1 if it is greater than 0. All combined, we have replaced the list comprehension: 
+```julia 
+newTotals = getfield.(thingTotals[1:length(situation.things)+1, w-thing.weight+1], thingIndex) .+ 1
+totalsDifferences = newTotals .- thing.maxN
+previousValuesOver = totalsDifferences .>= 0
+```
+
+Cool! And we have one more comprehension to crack down on: 
+```julia 
+thingTotals[thingIndex+1, w+1] = Tuple(( index == thingIndex ? value+1 : value for (index, value) in enumerate(thingTotals[maxValue[2], w-thing.weight+1]))) # add one to the total of the thing just added
+```
+
+All this is doing is incrementing the correct index (corresponding to the index representing the current Thing) by 1. This *should* be doable with splicing. 
+
+And after a few minutes of messing around in the REPL, I have a solution! So we of course start with the previous Tuple (like we did in the comprehension solution):
+```julia
+thingTotals[maxValue[2], w-thing.weight+1]
+```
+
+All we have to do, a method so much simplier than the comrehension, is this: 
+```julia 
+thingTotals[thingIndex+1, w+1] = (thingTotals[maxValue[2], w-thing.weight+1][1:thingIndex-1]..., thingTotals[maxValue[2], w-thing.weight+1][thingIndex]+1, thingTotals[maxValue[2], w-thing.weight+1][thingIndex+1:length(thingTotals[maxValue[2], w-thing.weight+1])]... )
+```
+
+Okay, admittedly this looks quite complicated when you don't just temporary variables, so let's just do a quick subsitution: 
+```julia 
+previousTotals = thingTotals[maxValue[2], w-thing.weight+1]
+
+thingTotals[thingIndex+1, w+1] = (previousTotals[1:thingIndex-1]..., previousTotals[thingIndex]+1, previousTotals[thingIndex+1, length(previousTotals)]...)
+```
+
+All we are doing here is splitting the Tuple at the thing index, incrementing the number at that index, and then putting the Tuple back together. 
+
+And now that we have done all that, we can put all of these fixes into the code, and retest the running times!
+
 ## Finding a Solution (Not Dynamic Programming)
 
 Note from after getting halfway through this: **this isn't a dynamic programming** solution, but it should work, so I will implement this as a reference. 

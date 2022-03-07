@@ -7,7 +7,7 @@ function get_best_items(situation::Situation)
     # matrix to store all of the values for each item and weight. 
     scores = Int.(zeros(length(situation.things)+1, situation.maxWeight+1))
 
-    blankTuple = Tuple((0 for i in situation.things)) # blank tuple to fill matrix with which counts number of each item at each index
+    blankTuple = Tuple(Int.(zeros(length(situation.things)))) # blank tuple to fill matrix with which counts number of each item at each index
 
     thingTotals = fill(blankTuple, (length(situation.things)+1, situation.maxWeight+1)) # matrix of the same size with a bunch of tuples counting the number of each item at each position. Currently all 0 to initialize matrix
 
@@ -16,7 +16,9 @@ function get_best_items(situation::Situation)
             if w-thing.weight >= 0 # make sure you can fit thing into knapsack 
                 previousValues = scores[1:length(situation.things)+1, w-thing.weight+1] # get all the values from the weight when "removing" this thing 
 
-                previousValuesOver = [totals[thingIndex] + 1 <= thing.maxN ? 1 : 0 for totals in thingTotals[1:length(situation.things)+1, w-thing.weight+1] ]
+                newTotals = getfield.(thingTotals[1:length(situation.things)+1, w-thing.weight+1], thingIndex) .+ 1
+                totalsDifferences = newTotals .- thing.maxN
+                previousValuesOver = totalsDifferences .>= 0
 
                 previousValuesIncreased = previousValues + (previousValuesOver * thing.value) # add the value of the thing to the previous values if there are enough of the thing
 
@@ -26,7 +28,9 @@ function get_best_items(situation::Situation)
                 if previousValuesOver[maxValue[2]] == 1 # if you could fit another thing in and so we are adding a thing, then make sure that is updated 
                     scores[thingIndex+1, w+1] = maxValue[1] # set the value at this index to the maximum value of the previous values added to the things value
                     
-                    thingTotals[thingIndex+1, w+1] = Tuple(( index == thingIndex ? value+1 : value for (index, value) in enumerate(thingTotals[maxValue[2], w-thing.weight+1]))) # add one to the total of the thing just added
+                    previousTotals = thingTotals[maxValue[2], w-thing.weight+1]
+
+                    thingTotals[thingIndex+1, w+1] = (previousTotals[1:thingIndex-1]..., previousTotals[thingIndex]+1, previousTotals[thingIndex+1, length(previousTotals)]...)
                 else # otherwise you don't have to update the thingTotals
                     scores[thingIndex+1, w+1] = maxValue[1] # set the value of the thing at this weight to the max value (so the previous best)
 
