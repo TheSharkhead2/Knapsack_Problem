@@ -18,7 +18,12 @@ function get_best_items(situation::Situation)
 
                 newTotals = getfield.(thingTotals[1:length(situation.things)+1, w-thing.weight+1], thingIndex) .+ 1
                 totalsDifferences = newTotals .- thing.maxN
-                previousValuesOver = totalsDifferences .>= 0
+                previousValuesOver = totalsDifferences .< 0
+
+                println(thingTotals[1:length(situation.things)+1, w-thing.weight+1])
+                println(newTotals)
+                println(totalsDifferences)
+                println(previousValuesOver)
 
                 previousValuesIncreased = previousValues + (previousValuesOver * thing.value) # add the value of the thing to the previous values if there are enough of the thing
 
@@ -30,7 +35,7 @@ function get_best_items(situation::Situation)
                     
                     previousTotals = thingTotals[maxValue[2], w-thing.weight+1]
 
-                    thingTotals[thingIndex+1, w+1] = (previousTotals[1:thingIndex-1]..., previousTotals[thingIndex]+1, previousTotals[thingIndex+1, length(previousTotals)]...)
+                    thingTotals[thingIndex+1, w+1] = (previousTotals[1:thingIndex-1]..., previousTotals[thingIndex]+1, previousTotals[thingIndex+1:length(previousTotals)]...)
                 else # otherwise you don't have to update the thingTotals
                     scores[thingIndex+1, w+1] = maxValue[1] # set the value of the thing at this weight to the max value (so the previous best)
 

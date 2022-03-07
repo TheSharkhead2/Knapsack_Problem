@@ -300,16 +300,16 @@ And then subtract the max number of the Thing:
 totalsDifferences = newtotals .- thing.maxN
 ```
 
-We now have a vector where if the entry is negative, the item won't fit, and if it is positive, it will. And we can now do our comparison to check if it is less than 0: 
+We now check to see if there is space (as in we have a negative number): 
 ```julia 
-totalsDifferences .>= 0
+totalsDifferences .< 0
 ```
 
 This will finally create a vector that is 0 if it is less than 0 and 1 if it is greater than 0. All combined, we have replaced the list comprehension: 
 ```julia 
 newTotals = getfield.(thingTotals[1:length(situation.things)+1, w-thing.weight+1], thingIndex) .+ 1
 totalsDifferences = newTotals .- thing.maxN
-previousValuesOver = totalsDifferences .>= 0
+previousValuesOver = totalsDifferences .<> 0
 ```
 
 Cool! And we have one more comprehension to crack down on: 
@@ -333,7 +333,7 @@ Okay, admittedly this looks quite complicated when you don't just temporary vari
 ```julia 
 previousTotals = thingTotals[maxValue[2], w-thing.weight+1]
 
-thingTotals[thingIndex+1, w+1] = (previousTotals[1:thingIndex-1]..., previousTotals[thingIndex]+1, previousTotals[thingIndex+1, length(previousTotals)]...)
+thingTotals[thingIndex+1, w+1] = (previousTotals[1:thingIndex-1]..., previousTotals[thingIndex]+1, previousTotals[thingIndex+1:length(previousTotals)]...)
 ```
 
 All we are doing here is splitting the Tuple at the thing index, incrementing the number at that index, and then putting the Tuple back together. 
