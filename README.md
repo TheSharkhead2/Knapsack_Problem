@@ -340,6 +340,100 @@ All we are doing here is splitting the Tuple at the thing index, incrementing th
 
 And now that we have done all that, we can put all of these fixes into the code, and retest the running times!
 
+Though first I should make sure my code has no bugs... 
+
+And it has bugs... 
+
+One second... 
+
+Okay I fixed my typos now... 
+
+## Testing my New Solution Which Previous Testing Indicated Was Necessary
+Now it is time to test my new solution without comprehensions and hope that it now runs in O(nW) time (if it doesn't, I am not sure what else I need to fix). Though I do want to make some changes to my benchmarking process so it doesn't take half an hour to test all of the values... Ahem... 
+
+Another quick thing I want to address fixing before I work on automating the other stuff is using different lists of things. As I pointed out earlier, just depending on which Things are randomly rolled, it can dramatically (well maybe not dramatically, but significantly) change the run time. Luckily, BenchmarkTools has a good method of doing this which hopefully works. I should just be able to change from:
+```julia 
+things = generate_things(nThings, maxWeight, maxValue, div(totalWeight, 20))
+
+situation = Situation(totalWeight, things)
+
+@benchmark get_best_items(situation)
+```
+
+To: 
+```julia 
+@benchmark get_best_items(x) setup=(x=Situation(totalWeight, generate_things(nThings, maxWeight, maxValue, div(totalWeight, 20))))
+```
+
+As I understand this, each iteration will test with a new list of Things. 
+
+Now to get this to run a bunch of different situations to get the full spread with one file execution... 
+
+Now this shouldn't be too difficult, just a for loop right? Well... There appears to be some issue with this code: 
+```julia 
+totalWeight = parse(Int, ARGS[5]) # if changing things, then last argument is max weight
+maxNumber = div(totalWeight, 20)
+
+for nThings ∈ startValue:valueChange:endValue 
+
+    println("number of things: ", nThings)
+    println("max weight: ", totalWeight)
+
+    generate_things(nThings, maxWeight, maxValue, maxNumber)
+
+    println("Benchmarked runtime: ")
+    println(@benchmark get_best_items(x) setup=(x=Situation(totalWeight, generate_things(nThings, maxWeight, maxValue, maxNumber))))
+end # for
+```
+
+Where the variable ```nThings``` is undefined in the benchmark statement, despite being defined just 6 lines earlier... Why?!? 
+
+Yeah so I couldn't get any of this to work. As soon as I fixed the issue with local and global variables (for some reason the macro can't see local variables), then some other indexing issues came up which I don't think are my fault. So reverting back to the original file and I just have to run this 100 times! Woo! 
+
+Anyway, let's confirm that it is still linear with weight: 
+```
+10 Things, 50 Weight → 11.1 μs
+10 Things, 100 Weight → 1.106 ms 
+10 Things, 150 Weight → 4.101 ms 
+10 Things, 200 Weight → 6.628 ms
+10 Things, 250 Weight → 9.395 ms
+10 Things, 300 Weight → 11.145 ms
+10 Things, 350 Weight → 14.776 ms 
+10 Things, 400 Weight → 17.343 ms 
+10 Things, 450 Weight → 19.779 ms
+10 Things, 500 Weight → 22.423 ms
+```
+
+Well.. For some reason, my new implementation appears to be consistently 2x slower than my previous implementation. It is still linear with weight, but it is slower. Which doesn't make a ton of sense? I am wondering if the Thing generation function is computationally taxing that that is having an effect (ie the benchmark function is for some reason including the time that takes in the benchmarked time, which would be irritating). Just out of curiosity, I want to try it without generating a new list of Things each time: 
+```
+10 Things, 500 Weight → 25.159 ms
+```
+
+Great. It is the same... So my algorithm just has a higher multiplier for some reason. Now it is a bit unclear whether this is from the low amount of weight and will go away with more weight or if this is an actual 2x multiplier, but let's hope this new implementation at least fixed the non-linear Things: 
+```
+10 Things, 50 Weight → 610.3 μs
+20 Things, 50 Weight → 1.404 ms
+30 Things, 50 Weight → 4.592 ms
+40 Things, 50 Weight → 7.116 ms
+50 Things, 50 Weight → 8.410 ms
+60 Things, 50 Weight → 13.877 ms
+70 Things, 50 Weight → 19.668 ms
+80 Things, 50 Weight → 31.262 ms
+90 Things, 50 Weight → 24.475 ms
+100 Things, 50 Weight → 35.277 ms
+110 Things, 50 Weight → 43.959 ms
+```
+
+Uh... So that doesn't look linear? But that random 24 ms is kinda weird... Trying some more values just to see: 
+```
+200 Things, 200 Weight → 3.64 s
+300 Things, 200 Weight → 23.715 s
+400 Things, 200 Weight → 36.412 s
+500 Things, 200 Weight → 125.987 s
+```
+
+Yeah not linear. And the algorithm is worse in every way... Fun. I guess I could look again into trying to fix it, but this seems like a lost cause at this point... 
+
 ## Finding a Solution (Not Dynamic Programming)
 
 Note from after getting halfway through this: **this isn't a dynamic programming** solution, but it should work, so I will implement this as a reference. 

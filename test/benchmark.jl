@@ -29,15 +29,17 @@ if length(ARGS) < 2 # need two arguments for number of things and weight
     throw(DomainError(ARGS, "Expecting two arguments: [number of things] [total weight]"))
 else 
     nThings = parse(Int, ARGS[1])
-    totalWeight = parse(Int, ARGS[2]) # the weight the knapsack can hold
+    totalWeight = parse(Int, ARGS[2])
+    
+    println("number of things: ", nThings)
+    println("max weight: ", totalWeight)
 
-    things = generate_things(nThings, maxWeight, maxValue, div(totalWeight, 20))
+    println("Benchmarked runtime: ")
+    # println(@benchmark get_best_items(x) setup=(x=Situation(totalWeight, generate_things(nThings, maxWeight, maxValue, div(totalWeight, 20)))))
 
-    println("Testing with the Things: ", things)
-
-    situation = Situation(totalWeight, things)
-
+    situation = Situation(totalWeight, generate_things(nThings, maxWeight, maxValue, div(totalWeight, 20)))
     println(@benchmark get_best_items(situation))
+
 end # if 
 
 

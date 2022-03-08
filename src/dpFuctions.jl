@@ -20,11 +20,6 @@ function get_best_items(situation::Situation)
                 totalsDifferences = newTotals .- thing.maxN
                 previousValuesOver = totalsDifferences .< 0
 
-                println(thingTotals[1:length(situation.things)+1, w-thing.weight+1])
-                println(newTotals)
-                println(totalsDifferences)
-                println(previousValuesOver)
-
                 previousValuesIncreased = previousValues + (previousValuesOver * thing.value) # add the value of the thing to the previous values if there are enough of the thing
 
                 # get the max value of the values 
