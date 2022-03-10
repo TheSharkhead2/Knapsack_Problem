@@ -432,7 +432,37 @@ Uh... So that doesn't look linear? But that random 24 ms is kinda weird... Tryin
 500 Things, 200 Weight → 125.987 s
 ```
 
-Yeah not linear. And the algorithm is worse in every way... Fun. I guess I could look again into trying to fix it, but this seems like a lost cause at this point... 
+Yeah not linear. And the algorithm is worse in every way... Fun. 
+
+A few days later... I have talked with my teacher a bit about my algorithm and there are a few things I think I need to try to figure out what is going on here. For starters, I am slightly concerned that this algorithm won't return correct results. The reason this is a concern of mine is sources online (really just this random [stack overflow post](https://stackoverflow.com/questions/55694896/time-complexity-of-a-bounded-knapsack-problem)) seem to suggest that I need a n x k x W tensor rather than a n x W matrix to represent the situation so I am not entirely sure if I am actually covering all the possibilities (or the necessary ones that is). My teacher seems to think that it is fine (though we only talked it through for 40 minutes and he does say he still doesn't entirely understand the algorithm) and I can see how the second matrix I am using can encode for the extra missing dimension, but I am still not convinced. 
+
+But aside from my concerns that my algorithm isn't correct, there is the issue with running time. It definitely isn't O(nW) (or even O(nkW))... So I am going to try benchmarking this again, but holding the number of each item constant at the same value... Hopefully this shows me something: 
+```
+10 Things, 30 of each Thing, 100 Weight → 3.501 ms 
+10 Things, 30 of each Thing, 200 Weight → 9.931 ms 
+10 Things, 30 of each Thing, 400 Weight → 21.162 ms 
+10 Things, 30 of each Thing, 800 Weight → 45.34 ms
+10 Things, 30 of each Thing, 1600 Weight → 91.687 ms
+```
+
+Cool. So that seems pretty linear, though I was already fairly convinced that this was linear earlier, this just confirms it. Now comes the problematic area, changing the number of Things:
+```
+10 Things, 30 of each Thing, 100 Weight → 2.598 ms 
+20 Things, 30 of each Thing, 100 Weight → 8.407 ms 
+40 Things, 30 of each Thing, 100 Weight → 33.123 ms 
+80 Things, 30 of each Thing, 100 Weight → 138.006 ms 
+160 Things, 30 of each Thing, 100 Weight → 778.949 ms 
+320 Things, 30 of each Thing, 100 Weight → 4.020 ms
+```
+
+This is very much not linear... Instead, I am pretty sure it is quadratic (at least a regression in [Desmos](https://www.desmos.com/calculator/5dgj5pwmx7) would indicate that). 
+
+This means that, much like I feared, the vectorization inside the loop is acting as "another loop" that is making this quadratic with the number of things rather than linear. 
+
+Doing some experimentation with vector addition in Julia, I found that adding together two vectors of length 10000000, it takes about 64.224 ms, whereas adding together two vectors of length 20000000 takes about 130.328 ms. So that is where my extra running time is coming from... Great. And unfortunately I don't see a way to fix this with my current method of implementation, but I know of a solution... That involves rewriting all of my code... Great.
+
+## Attempt at a Solution #3
+
 
 ## Finding a Solution (Not Dynamic Programming)
 

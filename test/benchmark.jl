@@ -6,18 +6,23 @@ using BenchmarkTools
 
 const maxValue = 100 
 const maxWeight = 100 
+const maxNumber = 30
 
 """
 Generates a bunch of random things. n of them
 
 """
-function generate_things(n::Int, maxWeight::Int, maxValue::Int, maxNumber::Int)
+function generate_things(n::Int, maxWeight::Int, maxValue::Int, maxNumber::Int; maxNumberConst::Bool=true)
     things = Vector{Thing}()
 
     for i ∈ 1:n 
         weight = rand(1:maxWeight)
         value = rand(1:maxValue)
-        number = rand(1:maxNumber)
+        if maxNumberConst 
+            number = maxNumber
+        else
+            number = rand(1:maxNumber)
+        end # if 
 
         push!(things, Thing(weight, value, number))
     end # for 
@@ -37,7 +42,7 @@ else
     println("Benchmarked runtime: ")
     # println(@benchmark get_best_items(x) setup=(x=Situation(totalWeight, generate_things(nThings, maxWeight, maxValue, div(totalWeight, 20)))))
 
-    situation = Situation(totalWeight, generate_things(nThings, maxWeight, maxValue, div(totalWeight, 20)))
+    situation = Situation(totalWeight, generate_things(nThings, maxWeight, maxValue, maxNumber))
     println(@benchmark get_best_items(situation))
 
 end # if 
