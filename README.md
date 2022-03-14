@@ -535,6 +535,66 @@ end # if
 
 Which this is basically just some indexing and a ```maximum()``` function. And that's it! I was totally over complicating this algorithm before. I mean, there is a few other things we need to do to calculate the actual Things that were taken, but that isn't that hard. 
 
+Now, to find which Things we took, we start at the bottom right index (the maximum score). We are going to perform an iterative scheme until we reach a Thing index of 0 (the None item basically). Here is what we do: 
+- If the value directly above this value (for the previous Thing or k but in the same weight) is the same, then change that to the new Thing index and perform this iteration on that index 
+- Otherwise, find out what Thing that index represents and how many are present, record that, and then move to the previous Thing at max k with a weight that is k x thing.weight less than the current weight. Perform the iteration on this new index.
+
+Here is that process in code. We start by simply creating an empty Vector to store the totals for everything: 
+```julia
+totals = Int.(zeros(length(situation.things)))
+```
+
+We then just need to get some temporary variables representing the index we are looking at. For starting, this can just be that bottom right index: 
+```julia 
+i, j = size(values)[1], size(values)[2] 
+```
+
+From here we enter a while loop that goes until we reach a Thing index of 1 (actual thingIndex of 0, but everything is shifted up by 1): 
+```julia 
+while i != 1
+end # while
+```
+Now within that while loop, we do the check to see if the current index is the same score as the index directly above it (a decrease in the thingIndex, i):
+```julia 
+if values[i, j] == values[i-1, j] 
+    i = i - 1 
+end # if
+```
+If it is the same, then we change to that index. If this isn't the case, we need to first find the k value and the thingIndex for the value of i we are at: 
+```julia 
+if values[i, j] == values[i-1, j] 
+    i = i - 1 
+else 
+    k = (i-1) % situation.maxNThings
+
+    thingIndex = Int(((i-1)-k)/situation.maxNThings + 1) 
+
+end # if
+```
+Here, we know that we can find what number of things we are looking at simply through the mod function (though k=0 actually means k = maxNThings). We can then use this in order to calculate the thingIndex (or which thing this i index represents). Once we have these values, we can set k to the proper value (if it is 0), increment the proper index in our storage tuple by this k, and move to the previous weight class and previous thing. 
+
+```julia 
+if values[i, j] == values[i-1, j] 
+    i = i - 1 
+else 
+    k = (i-1) % situation.maxNThings
+
+    thingIndex = Int(((i-1)-k)/situation.maxNThings + 1) 
+    
+    if k == 0
+        k = situation.maxNThings 
+    end # if 
+
+    totals[thingIndex] += k 
+    
+    i = Int(((i-1)-k)/situation.maxNThings)*situation.maxNThings + 1 
+    j = Int(j - k*situation.things[thingIndex].weight) 
+
+end # if
+```
+
+After this iteration is complete, we will have a vector counting up all the numbers of Things we have for our best combination, completing our algorithm! 
+
 
 ## Finding a Solution (Not Dynamic Programming)
 
