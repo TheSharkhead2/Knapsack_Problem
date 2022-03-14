@@ -5,6 +5,6 @@ export Thing, Situation
 
 include("dpFuctions.jl")
 
-export get_best_items
+export bounded_dp_knapsack
 
 end # module KnapsackDynamicProgramming

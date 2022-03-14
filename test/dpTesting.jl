@@ -4,6 +4,6 @@ using .KnapsackDynamicProgramming
 
 allThings = [Thing(2, 1, 1), Thing(3, 2, 3), Thing(4, 5, 2)]
 
-situation = Situation(10, allThings)
+situation = Situation(10, allThings, 3)
 
-println(get_best_items(situation))
+println(bounded_dp_knapsack(situation))

@@ -15,4 +15,5 @@ Knapsack situation object to keep track of given problem information
 struct Situation
     maxWeight::Int
     things::Vector{Thing}
+    maxNThings::Int
 end # Situation

@@ -462,6 +462,78 @@ This means that, much like I feared, the vectorization inside the loop is acting
 Doing some experimentation with vector addition in Julia, I found that adding together two vectors of length 10000000, it takes about 64.224 ms, whereas adding together two vectors of length 20000000 takes about 130.328 ms. So that is where my extra running time is coming from... Great. And unfortunately I don't see a way to fix this with my current method of implementation, but I know of a solution... That involves rewriting all of my code... Great.
 
 ## Attempt at a Solution #3
+So, attempt number 3. I had already gotten about an hour into writing this solution when I realized that it wasn't going to work. I mean, it seemed to be a correct algorithm, but it just wasn't going to be in O(nkW) time. I was still using my old algorithm with just more stuff going on... It was pretty lame. 
+
+So I then took a step back and basically doodled for a little bit, trying to figure out the 0-1 knapsack dynamic programming solution. After quite a bit of thinking, I realized I had been going about this solution entirely wrong and was very much over complicating it. 
+
+In order to explain what I realized, let's step back to the 0-1 knapsack problem (the problem I probably should have worked on from the start). The big difference between this problem and the problem I am solving is in the 0-1 problem you can either take an item or leave it (we are going to generalize this to the problem I am working on where you can either take k of the item or k-1 of the item or k-2 of the item... or 0 of the item). To solve this problem, much like what I was doing earlier, we construct a n x W array where each index represents a possible weight and a certain thing. At each entry we compare the entry for the same weight but the Thing before the current Thing and the value of the entry for the Thing before the current Thing added to the vaule of the current Thing, but at the weight of the current weight minus the weight of the current Thing. Phew. That was a mouth-full. A bit more precisely, we are trying to find: 
+```
+maximum(S[i-1, W], S[i-1, W-W_i] + V_i)
+```
+
+Where ```S``` is this matrix we have constructed, ```W``` is the current weight, ```i``` is the current thing, and, fairly clearly, ```W_i``` is the weight of the current thing and ```V_i``` is the value. 
+
+This propagates down to the bottom right corner of the array (the last Thing index and the last weight index) where we have the maximum value for the knapsack. We can pretty easily look back through the array to find which Things we took along the way (this I will explain for my actual implementation, just not this one). 
+
+Okay cool. But what does this have to do with the problem I am trying to solve? Well, as I alluded to earlier, we can look at my problem in the same light, but with a nk x W array (or an n x k x W array, same thing). There are a few differences though. For starters, if we can only take a maximum of k Things, it doesn't make sense to, say in the k=2 entry, to look at the k=1 entry and see if you could add 2 more things. Like if you could take a maximum of 2 Things, then you have just taken 3 and this doesn't make sense! 
+
+To solve this, we will look at the previous weight (so current weight minus the weight of the current thing) and then the maximum value of k for the previous item. Why can we look at only this maximum value? Well, because the entry we are going to compare this to is the same weight but at k-1 for any k > 1 and the previous Thing at its maximum k when k = 1. If that makes any sense. But anyways, onto the implementation! 
+
+Okay, to start our implementation, we are still going to be using the objects we defined before: 
+```julia 
+struct Thing
+    value::Int
+    weight::Int
+    maxN::Int # the max of this item you can have
+end # Thing
+
+struct Situation
+    maxWeight::Int
+    things::Vector{Thing}
+    maxNThings::Int
+end # Situation
+```
+
+These are effectively just to make data storage easier, but important to point out to see the variables in our situation. Each Thing needs a specific weight, value, and the maximum number of them there are. And then, the general situation object needs the total weight the knapsack can hold, all the Things, and just another variable that represents the maximum number of Things (so basically the maximum value of all the maximum numbers of each Thing). 
+
+So now onto the actual algorithm, again we start by creating an empty matrix: 
+```julia
+scores = Int.(zeros((length(situation.things) * situation.maxNThings)+1, situation.maxWeight+1))
+```
+
+This is an nk x W matrix. I decided to use this shape of matrix as it was easier to index than a n x k x W array. This matrix encodes for each Thing, all the possible number of Things, and all the possible weights. Each entry will hold the maximum value for that combination of things. From here, we need to loop through all of those possibilities: 
+```julia 
+for w in 1:situation.maxWeight # loop through all the possible weights 
+    for (thingIndex, thing) in enumerate(situation.things) # loop through all the things 
+        for k in 1:situation.maxNThings # loop through all the possible quantities of things 
+            
+        end # for 
+    end #for 
+end # for 
+```
+
+Fairly simply, we just need to look at all these possibilities. From now on I will talk about code within this loop until specified. We now do a quick check on bounds: 
+```julia 
+if (k * thing.weight > w) || (k > thing.maxN) 
+    
+end # if
+```
+Here, all we are checking is to see: 1) would this number of Things even fit in this weight of knapsack? and 2) are we over the maximum number of Things for this specific Thing (remember, this isn't the same for every item)? If either of these two conditions is satisfied, we just grab the score entry directly above the current one: 
+```julia
+if (k * thing.weight > w) || (k > thing.maxN) 
+    scores[((thingIndex-1)*situation.maxNThings)+k+1, w+1] = scores[(thingIndex-1)*situation.maxNThings+k, w+1] 
+end # if
+```
+This piece of code either takes the score from the same Thing, but 1 fewer of them OR the maxmimum number of Things for the previous Thing (of course in the same weight). This is the condition when the previous calculated value is just a better value for the current weight and we change this particular index to this value as this index is impossible so we can just take the value before it. Now, we can only consider valid situations, so we simply take the maximum of this value just described and the value of the previous weight plus the weight of the current Thing: 
+```julia
+if (k * thing.weight > w) || (k > thing.maxN) 
+    scores[((thingIndex-1)*situation.maxNThings)+k+1, w+1] = scores[(thingIndex-1)*situation.maxNThings+k, w+1] 
+else 
+    scores[((thingIndex-1)*situation.maxNThings+k)+1, w+1] = maximum([scores[((thingIndex-1)*situation.maxNThings+k), w+1], (scores[((thingIndex-1)*situation.maxNThings)+1, w-thing.weight*k+1] + thing.value*k)]) 
+end # if
+```
+
+Which this is basically just some indexing and a ```maximum()``` function. And that's it! I was totally over complicating this algorithm before. I mean, there is a few other things we need to do to calculate the actual Things that were taken, but that isn't that hard. 
 
 
 ## Finding a Solution (Not Dynamic Programming)
