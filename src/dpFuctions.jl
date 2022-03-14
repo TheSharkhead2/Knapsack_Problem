@@ -18,7 +18,7 @@ function bounded_dp_knapsack(situation::Situation)
         end #for 
     end # for 
 
-    (scores[size(scores)[1], size(scores)[2]], get_best_things(scores, situation))
+    scores[size(scores)[1], size(scores)[2]] #, get_best_things(scores, situation)
 end # function bounded_dp_knapsack
 
 """

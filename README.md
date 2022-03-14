@@ -1,6 +1,9 @@
+[![wakatime](https://wakatime.com/badge/user/75e033f5-beb6-4359-afae-db8209348d42/project/1a7382d6-4ae6-4ecf-9757-88ba135c5297.svg)](https://wakatime.com/badge/user/75e033f5-beb6-4359-afae-db8209348d42/project/1a7382d6-4ae6-4ecf-9757-88ba135c5297)
 # The Knapsack Problem - An Exploration of Dynamic Programming
 
 When asking my teacher for any recommendations for exploring dynamic programming, I was turned towards this problem. I figured that I would make this project to document my work through this problem. As of right now (writing this introduction section) I have done zero work/research on this problem, but I have seen the problem statement. For thoroughness, I will restate the problem here. 
+
+Note: I tried about 4 times to write a solution to this, only succeeding on my last one. My [first attempt](#finding-a-solution-not-dynamic-programming) was definitely not a dynamic programming solution. It was basically a brute force method, but I wrote up my thought process on it so I decided to keep it (I just moved it to the end, the link should take you there). I then did a little bit of research (only to get a general idea) and [tried again](#the-wrong-dynamic-programming-solution). This seemed to produce correct results (though I now doubt that) but didn't run in linear time with increasing the number of Things, so it was wrong. I then did a little bit more research and properly sat down to think through the 0-1 knapsack problem (there were no resources I could find on the bounded knapsack problem which I was working on). After that, I finally understood what I had to do and implemented it, as far as I can tell, [accurately](#attempt-at-a-solution-3). If you just want to see my correct attempt, go to [this link](#attempt-at-a-solution-3) and read that section as well as the [section where I test that algorithm](#testing-our-algorithm-v3). Otherwise, read it through how you like, just know that **a large majority of it is just wrong.** I decided to keep it all in as it shows my entire process which I think is important for a project that I essentially spent 20 hours on. 
 
 ## The Problem 
 
@@ -9,7 +12,7 @@ Essentially, the idea of this problem is that you are some kind of traveler/thei
 My goal with this project is to come to some form of dynamic programming solution which I have been told exists for this problem. 
  
 
-## The **Dynamic Programming** Solution
+## The Wrong Dynamic Programming Solution
 
 To preface this section: this isn't the first attempt trying to solve this. I intially was trying to work through this completely blind to the approach I needed to take. You can read more about my thought process below this soltuion under the "Finding a Solution" header. But after spending many hours thinking about this blind, I was unable to prevent myself from looking up some guidance towards a solution. Surprisingly (though really not surprisingly) this wasn't that helpful... Nothing explained the solution well. But I did get a general direction, especially from the [Wikipedia page](https://en.wikipedia.org/wiki/Knapsack_problem), and understood much better the direction I had to take. Effectively, I understood that the approach involved creating a x by W matrix (where x is the number of Things and W is the weight) and that I needed to look at the current weight minus the weight of the current thing. From there, I built the algorithm through my own understanding and direction. Anyway, end of preface.
 
@@ -595,6 +598,81 @@ end # if
 
 After this iteration is complete, we will have a vector counting up all the numbers of Things we have for our best combination, completing our algorithm! 
 
+## Testing our Algorithm v3
+Hopefully this is the last time I have to run a bunch of algorithm benchmarks because I have actually implemented it correctly this time. Anyways, we are hoping to see this new algorithm running in O(nkW) time, so we need to check to see if it is linear with each independently when the others are held constant. We will start with weight because that was correct before and it would be a bad thing if it wasn't correct this time: 
+```
+10 Things, max 20 of each, 50 Weight → 41.000 μs
+10 Things, max 20 of each, 100 Weight → 103.900 μs
+10 Things, max 20 of each, 200 Weight → 288.900 μs 
+10 Things, max 20 of each, 400 Weight → 707.000 μs
+10 Things, max 20 of each, 800 Weight → 1.782 ms 
+10 Things, max 20 of each, 1600 Weight → 5.012 ms 
+10 Things, max 20 of each, 3200 Weight → 12.584 ms 
+10 Things, max 20 of each, 6400 Weight → 29.924 ms 
+10 Things, max 20 of each, 12800 Weight → 83.491 ms 
+```
+
+That is... concerningly non-linear. Though I have a feeling this has to do with my utterly terrible find the number of each Thing function. If we just take the problem to be find the optimal weight, we can ignore that. So let's just remove that from the algorithm and see what happens: 
+```
+10 Things, max 20 of each, 6400 Weight → 28.006 ms 
+10 Things, max 20 of each, 12800 Weight → 81.101 ms 
+10 Things, max 20 of each, 25600 Weight → 161.768
+10 Things, max 20 of each, 51200 Weight → 431.397 ms 
+10 Things, max 20 of each, 102400 Weight → 1.093 s 
+10 Things, max 20 of each, 204800 Weight → 1.867 s 
+10 Things, max 20 of each, 409600 Weight → 4.056 s 
+10 Things, max 20 of each, 819200 Weight → 5.289 s
+```
+
+Hmm... Okay that isn't linear. And that is a problem. It is definitely much, much faster than my previous algorithm, but it isn't running in linear time with weight. I am not entirely sure what it is running in though. Like it goes from 1.092 → 1.867 → 4.056 which is like very linear. But then it does this: 4.056 → 5.289. Something weird is definitely happening... Like theoretically just looking at the code, it should run in O(nkW) time. I see no reason why it wouldn't. But then, like... It really just doesn't look linear. My one theory is that the number of things is just too small, so I could try changing that: 
+```
+50 Things, max 20 of each, 1000 Weight → 18.703 ms 
+50 Things, max 20 of each, 2000 Weight → 47.870 ms 
+50 Things, max 20 of each, 4000 Weight → 131.463 ms 
+50 Things, max 20 of each, 8000 Weight → 309.092 ms 
+50 Things, max 20 of each, 16000 Weight → 673.817 ms 
+50 Things, max 20 of each, 32000 Weight → 1.489 s
+50 Things, max 20 of each, 64000 Weight → 3.166 s 
+50 Things, max 20 of each, 128000 Weight → 5.355 s
+50 Things, max 20 of each, 256000 Weight → 8.122 s 
+50 Things, max 20 of each, 512000 Weight → 14.306
+```
+
+Well, it is still true that it *seems* to be doubling with higher and higher weights, but like it is weird. It isn't even doubling but like 1.8x-ing or something. Again maybe I need to try this with more Things: 
+```
+500 Things, max 50 of each, 1000 Weight → 560.002 ms 
+500 Things, max 50 of each, 2000 Weight → 1.828 s
+500 Things, max 50 of each, 4000 Weight → 5.352 s
+500 Things, max 50 of each, 8000 Weight → 10.035 s 
+500 Things, max 50 of each, 16000 Weight → 19.880 s
+500 Things, max 50 of each, 32000 Weight → 44.521 s 
+```
+
+Okay that looks roughly linear? At least in the later number of Things which is when it is more important? I am guessing there is just so much noise that with lower values it is really just random. This seems odd, but in the limit it seems linear so that is all that matters. 
+
+Now to check if it is linear with things. Learning my lesson, I am going to pick a larger starting value for weight: 
+```
+500 Things, max 50 of each, 1000 Weight → 559.581 ms
+1000 Things, max 50 of each, 1000 Weight → 1.321 s
+2000 Things, max 50 of each, 1000 Weight → 3.114 s
+4000 Things, max 50 of each, 1000 Weight → 5.910 s 
+8000 Things, max 50 of each, 1000 Weight → 10.692 s
+```
+
+So, we are seeing some of the same noise from the looks of it, but it also very much seems linear as well (assuming like 200 ms of noise more or less). I am just going to take this as saying my algorithm is linear with Things as I like that conclusion. Also, if my previous attempts at this algorithm are anything to go by, it would be pretty clear if this was O(n^2) as it would just grow out of control very fast, not fluctuate around a linear pattern. Finally, to test linearity with the max number of things:
+```
+500 Things, max 50 of each, 1000 Weight → 534.402 ms
+500 Things, max 100 of each, 1000 Weight → 826.084 ms
+500 Things, max 200 of each, 1000 Weight → 1.200 s
+500 Things, max 400 of each, 1000 Weight → 1.708 s 
+500 Things, max 800 of each, 1000 Weight → 2.969 s
+500 Things, max 1600 of each, 1000 Weight → 6.265 s 
+500 Things, max 3200 of each, 1000 Weight → out of memory error 
+```
+
+Yeah... I ran out of memory... But it seemed linear before I did so I am just going to assume that it is (specifically the 1.708 → 2.969 → 6.265)
+
+Alright, cool! After about 17 hours and 39 minutes of straight coding (and probably around another 3-5 hours of brainstorming, researching, and thinking through things) I have finally found a solution that works. I should have looked up how to do this from the start... But it was fun! I am sorry that this write-up is such a mess, I intended it to be a stream of conscious, and it definitely was, but that also means it was a complete mess. Hopefully it was at least interesting to see how I thought this through. 
 
 ## Finding a Solution (Not Dynamic Programming)
 
